@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ping Pong Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        canvas {
+            background: green;
+            display: block;
+            margin: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 flex flex-col items-center justify-center min-h-screen text-white">
+    <h1 class="text-3xl font-bold mb-4">Juego de Ping Pong</h1>
+    <p class="text-lg">Usa las teclas <strong>W</strong> y <strong>S</strong> para mover la paleta izquierda.</p>
+    <p class="text-lg">Presiona <strong>ESPACIO</strong> para reanudar el juego después de un punto.</p>
+    <p class="text-lg">Sets: <span id="setScore">0 - 0</span></p>
+    <p class="text-lg">Puntos: <span id="score">0 - 0</span></p>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <script>
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+
+        const paddleWidth = 10, paddleHeight = 120;
+        let leftPaddleY = canvas.height / 2 - paddleHeight / 2;
+        let rightPaddleY = canvas.height / 2 - paddleHeight / 2;
+        let ballX = canvas.width / 2, ballY = canvas.height / 2;
+        let ballSpeedX = 4, ballSpeedY = 4;
+        let leftScore = 0, rightScore = 0;
+        let leftSets = 0, rightSets = 0;
+        const paddleSpeed = 5;
+        const aiSpeed = 4;
+        const pointsToWinSet = 7;
+        const setsToWinMatch = 3;
+        let gamePaused = true;
+        const scoreDisplay = document.getElementById("score");
+        const setScoreDisplay = document.getElementById("setScore");
+
+        function drawRect(x, y, width, height, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, width, height);
+        }
+
+        function drawCircle(x, y, radius, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, radius, 0, Math.PI * 2, false);
+            ctx.fill();
+        }
+
+        function drawNet() {
+            ctx.fillStyle = "white";
+            for (let i = 0; i < canvas.height; i += 20) {
+                ctx.fillRect(canvas.width / 2 - 1, i, 2, 10);
+            }
+        }
+
+        function resetBall() {
+            ballX = canvas.width / 2;
+            ballY = canvas.height / 2;
+            ballSpeedX = 4 * (Math.random() > 0.5 ? 1 : -1);
+            ballSpeedY = 4 * (Math.random() > 0.5 ? 1 : -1);
+            gamePaused = true;
+        }
+
+        function moveAI() {
+            if (rightPaddleY + paddleHeight / 2 < ballY) {
+                rightPaddleY += aiSpeed;
+            } else {
+                rightPaddleY -= aiSpeed;
+            }
+        }
+
+        function move() {
+            if (gamePaused) return;
+            ballX += ballSpeedX;
+            ballY += ballSpeedY;
+            moveAI();
+
+            if (ballY <= 0 || ballY >= canvas.height) {
+                ballSpeedY *= -1;
+            }
+
+            if (ballX <= paddleWidth && ballY > leftPaddleY && ballY < leftPaddleY + paddleHeight) {
+                ballSpeedX *= -1;
+                ballSpeedX *= 1.1;
+            }
+
+            if (ballX >= canvas.width - paddleWidth && ballY > rightPaddleY && ballY < rightPaddleY + paddleHeight) {
+                ballSpeedX *= -1;
+                ballSpeedX *= 1.1;
+            }
+
+            if (ballX < 0) {
+                rightScore++;
+                updateScore();
+                resetBall();
+            }
+
+            if (ballX > canvas.width) {
+                leftScore++;
+                updateScore();
+                resetBall();
+            }
+        }
+
+        function updateScore() {
+            scoreDisplay.textContent = `${leftScore} - ${rightScore}`;
+            setScoreDisplay.textContent = `${leftSets} - ${rightSets}`;
+        }
+
+        function draw() {
+            drawRect(0, 0, canvas.width, canvas.height, "green");
+            drawNet();
+            drawRect(0, leftPaddleY, paddleWidth, paddleHeight, "white");
+            drawRect(canvas.width - paddleWidth, rightPaddleY, paddleWidth, paddleHeight, "white");
+            drawCircle(ballX, ballY, 10, "lime");
+        }
+
+        function gameLoop() {
+            move();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "w" && leftPaddleY > 0) leftPaddleY -= paddleSpeed;
+            if (event.key === "s" && leftPaddleY < canvas.height - paddleHeight) leftPaddleY += paddleSpeed;
+            if (event.key === " ") gamePaused = false;
+        });
+
+        gameLoop();
+    </script>
+</body>
+</html>
